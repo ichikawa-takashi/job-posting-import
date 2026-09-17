@@ -1,0 +1,1766 @@
+@charset "UTF-8";
+
+/* ============================================================
+   求人票サイト 共通スタイル
+   ------------------------------------------------------------
+   ・「薄いグレー枠＋角丸＋影」のカードは使わない
+   ・面（背景色）と罫線で区切る、紙面のような組み方
+
+   タイプスケール（整数のみ／本文 16px 基準）
+   ------------------------------------------------------------
+     14px  ×0.875  補足・キャプション・タグ・ラベル
+     16px  ×1.00   本文・箇条書き・入力欄
+     18px  ×1.125  リード文・時刻・弱い小見出し
+     20px  ×1.25   小見出し（.item h3 など）
+     24px  ×1.50   中見出し・サマリー数値・強調文
+     32px  ×2.00   セクション見出し
+     40px  ×2.50   ページ見出し（h1）
+     48px  ×3.00   訴求する数字
+
+   ・ジャンプ率は 本文16 → 小見出し20（×1.25）→ 見出し32（×2.0）
+     と段階的に開き、階層が一目で分かるようにしています。
+   ・上記以外の数値は使いません。小数も使いません。
+   ・大きい文字は line-height を詰め（1.05〜1.6）、
+     小さい文字はゆるめる（1.8〜2.0）ことで、視覚的な密度を揃えています。
+   ============================================================ */
+
+:root {
+    /* 指定パレット */
+    --main: #D98C9B;
+    /* くすみピンク */
+    --accent: #F47C6C;
+    /* コーラルオレンジ */
+    --accent-fill: #C4472F;
+    /* 白文字を乗せる面としてのコーラル */
+    --navy: #334155;
+    /* ダークネイビー */
+    --bg: #FFFFFF;
+    /* 白ベース。色は面ではなく罫線と文字で効かせる */
+    --bg-soft: #FBF7F6;
+    /* ごく淡い地。使うのは注記ボックスなど最小限に */
+    --bg-section: #F7EEF0;
+    /* 淡いピンク。強調したい1〜2箇所だけに使う */
+    --text: #333;
+    /* 本文 */
+    --muted: #5E5E68;
+    /* 補足文字 */
+    --border: #E3DAD9;
+    /* 罫線 */
+
+    /* 上記からの派生（文字色として十分な濃さを確保） */
+    --main-deep: #B4657A;
+    /* 面として使うピンク */
+    --main-ink: #8E4356;
+    /* 淡い地の上に置くピンク文字 */
+    --accent-ink: #A83A25;
+    /* 淡い地の上に置くオレンジ文字 */
+    --navy-deep: #27313F;
+    --text-sub: #43434D;
+    --rule: #D8CCCB;
+    --rule-dark: #B9A9A9;
+    --on-dark: #EDF1F5;
+    --on-dark-sub: #C8D0DA;
+    --white: #FFFFFF;
+
+    --serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+        "Noto Sans JP", Meiryo, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px;
+}
+
+body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.95;
+    font-size: 16px;
+    letter-spacing: .015em;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: inherit;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+.wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* ============================================================
+   ヘッダー
+   ============================================================ */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: var(--white);
+    color: var(--navy);
+    border-bottom: 1px solid var(--border);
+}
+
+.site-header .inner {
+    min-height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.site-header .brand {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    color: var(--navy);
+    text-decoration: none;
+    line-height: 1.5;
+}
+
+.site-header .brand small {
+    display: block;
+    font-family: var(--sans);
+    font-size: 14px;
+    letter-spacing: .04em;
+    color: var(--main-ink);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.header-nav {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+}
+
+.header-nav a {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text-sub);
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+}
+
+.header-nav a:hover {
+    border-bottom-color: var(--main);
+}
+
+/* ============================================================
+   セクション
+   ============================================================ */
+section.block {
+    padding: 62px 0;
+    background: var(--white);
+}
+
+/* 面で塗り分けず、上の罫線でセクションを区切る */
+section.block+section.block {
+    /* border-top: 1px solid var(--border); */
+}
+
+section.block.plain {
+    border-top: 0;
+}
+
+/* tinted は使わなくなったが、古いHTMLが残っていても崩れないよう白のまま受ける */
+section.tinted {
+    background: var(--white);
+}
+
+section.plain {
+    background: var(--white);
+}
+
+.eyebrow {
+    font-size: 14px;
+    letter-spacing: .12em;
+    font-weight: 700;
+    color: var(--main-ink);
+    margin: 0 0 10px;
+}
+
+.section-title {
+    font-family: var(--serif);
+    font-size: clamp(24px, 3.6vw, 32px);
+    font-weight: 600;
+    letter-spacing: .05em;
+    line-height: 1.45;
+    margin: 0;
+    padding-block: 18px;
+    margin-bottom: 30px;
+    color: var(--navy);
+    position: relative;
+    text-align: center;
+    background: #FDF8F9;
+    text-align: left;
+    border-left: 5px solid var(--main-deep);
+    padding: 16px;
+}
+
+/* .section-title::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 46px;
+    height: 3px;
+    background: var(--main-deep);
+} */
+
+.section-lead {
+    margin: 16px 0 0;
+    color: var(--text-sub);
+    font-size: 18px;
+    line-height: 1.9;
+    /* max-width: 40em; */
+}
+
+.sub-head {
+    font-family: var(--serif);
+    color: var(--navy);
+    margin: 44px 0 0;
+    font-size: 24px;
+    letter-spacing: .04em;
+    line-height: 1.5;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--navy);
+}
+
+/* ============================================================
+   タグ（角丸にしない）
+   ============================================================ */
+.tag {
+    display: inline-block;
+    padding: 5px 12px;
+    line-height: 1.6;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    background: transparent;
+    color: var(--main-ink);
+    border: 1px solid var(--main-deep);
+}
+
+.tag-accent {
+    background: var(--accent-fill);
+    color: #fff;
+    border-color: var(--accent-fill);
+}
+
+.tag-line {
+    border-color: var(--rule-dark);
+    color: var(--text-sub);
+}
+
+.tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+/* ============================================================
+   汎用
+   ============================================================ */
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 14px;
+    line-height: 1.95;
+}
+
+.center {
+    text-align: center;
+}
+
+.mt-s {
+    margin-top: 14px;
+}
+
+.mt-m {
+    margin-top: 28px;
+}
+
+.mt-l {
+    margin-top: 44px;
+}
+
+.grid {
+    display: grid;
+    gap: 0;
+}
+
+.grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 860px) {
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================
+   ヒーロー
+   ============================================================ */
+.hero {
+    background: var(--white);
+    padding: 56px 0 0;
+}
+
+.hero .cond {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--main-ink);
+    margin: 22px 0 12px;
+    letter-spacing: .04em;
+}
+
+.hero h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(28px, 5.2vw, 40px);
+    line-height: 1.5;
+    letter-spacing: .04em;
+    margin: 0;
+    color: var(--navy);
+    padding-left: 22px;
+    /* border-left: 5px solid var(--main-deep); */
+}
+
+.hero .lead {
+    margin: 28px 0 48px;
+    /* max-width: 38em; */
+    font-size: 18px;
+    line-height: 2;
+    color: var(--text);
+}
+
+/* サマリー：濃色の帯 */
+/* 冒頭サマリー。全幅の帯にせず、本文と同じインナー幅に収める */
+.stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 40px 0 0;
+    background: var(--white);
+    border-top: 2px solid var(--navy);
+    border-bottom: 1px solid var(--border);
+}
+
+.stat-strip>div {
+    padding: 20px 22px;
+    border-right: 1px solid var(--border);
+}
+
+.stat-strip>div:last-child {
+    border-right: 0;
+    padding-right: 0;
+}
+
+.stat-strip dt {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--main-ink);
+    letter-spacing: .04em;
+    margin: 0 0 6px;
+}
+
+.stat-strip dd {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: .02em;
+    line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+    .stat-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stat-strip>div {
+        padding-right: 18px;
+    }
+
+    .stat-strip>div:nth-child(2n) {
+        border-right: 0;
+        padding-right: 0;
+    }
+
+    .stat-strip>div:nth-child(-n+2) {
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stat-strip dd {
+        font-size: 20px;
+    }
+}
+
+/* ============================================================
+   数字（罫線で区切る）
+   ============================================================ */
+/* ------------------------------------------------------------
+   数字で見るポイント
+   淡いピンクの帯に、白い丸を並べる
+   ------------------------------------------------------------ */
+/* grid ではなく flex で並べる。
+   5件・7件のように割り切れない数でも、最後の行が中央に寄る。 */
+.numbers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 28px 20px;
+    padding: 46px 30px 40px;
+    background: #FBF3F5;
+}
+
+.numbers.n4 {
+    gap: 26px 14px;
+    padding: 44px 24px 38px;
+}
+
+.num-card {
+    flex: 0 1 calc((100% - 40px) / 3);
+    max-width: 240px;
+    padding: 0;
+    border: 0;
+    text-align: center;
+}
+
+.numbers.n4 .num-card {
+    flex-basis: calc((100% - 42px) / 4);
+    max-width: 200px;
+}
+
+.num-card .circle {
+    position: relative;
+    width: min(206px, 100%);
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    padding: 10px;
+    background: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.numbers.n4 .num-card .circle {
+    width: min(178px, 100%);
+}
+
+/* 丸の左上にのせる連番 */
+.num-card .no {
+    position: absolute;
+    top: 4px;
+    left: 2px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--main-deep);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--serif);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    line-height: 1;
+}
+
+.num-card .inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+/* 何の数字かを示す短いラベル */
+.num-card .lbl {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    line-height: 1.5;
+    color: var(--main-ink);
+    word-break: keep-all;
+}
+
+.num-card .big {
+    font-family: var(--serif);
+    font-size: 40px;
+    color: var(--main-deep);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: .01em;
+    word-break: keep-all;
+}
+
+/* 「1,600社以上」のような長い値は段階的に小さくする */
+.num-card .big.len-l {
+    font-size: 31px;
+}
+
+.num-card .big.len-xl {
+    font-size: 24px;
+    line-height: 1.35;
+}
+
+.num-card .big span {
+    font-size: 16px;
+    font-weight: 700;
+    font-family: var(--sans);
+    margin-left: 4px;
+    color: var(--main-ink);
+}
+
+.num-card p {
+    margin: 18px auto 0;
+    max-width: 21em;
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--text-sub);
+    text-align: center;
+}
+
+@media (max-width: 1000px) {
+
+    .numbers,
+    .numbers.n4 {
+        gap: 30px 18px;
+    }
+
+    .num-card,
+    .numbers.n4 .num-card {
+        flex-basis: calc((100% - 18px) / 2);
+        max-width: none;
+    }
+}
+
+@media (max-width: 560px) {
+
+    .numbers,
+    .numbers.n4 {
+        gap: 26px 0;
+        padding: 34px 18px 30px;
+    }
+
+    .num-card,
+    .numbers.n4 .num-card {
+        flex-basis: 100%;
+    }
+
+    .num-card .circle,
+    .numbers.n4 .num-card .circle {
+        width: min(180px, 72vw);
+    }
+
+    .num-card .no {
+        width: 38px;
+        height: 38px;
+        font-size: 13px;
+    }
+
+    .num-card .lbl {
+        font-size: 13px;
+    }
+}
+
+/* ============================================================
+   本文ブロック
+   ============================================================ */
+.card {
+    padding: 0;
+    margin-top: 28px;
+}
+
+.card h3 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    color: var(--navy);
+    letter-spacing: .03em;
+    line-height: 1.6;
+}
+
+.card p {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text);
+    line-height: 2;
+}
+
+/* 番号つきの項目：横に並べず、番号 → 見出し → 本文 の縦積み */
+.items {
+    border-top: 1px solid var(--rule);
+    margin-top: 28px;
+}
+
+.item {
+    display: block;
+    padding: 40px 0 28px;
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+}
+
+.item .no {
+    display: inline-block;
+    font-family: var(--serif);
+    font-size: 80px;
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    font-weight: 600;
+    color: var(--main-ink);
+    opacity: 0.1;
+    letter-spacing: -0.05em;
+    line-height: 1.4;
+    padding-bottom: 5px;
+    margin-bottom: 12px;
+    /* border-bottom: 2px solid var(--main-deep); */
+}
+
+.item h3 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    color: var(--navy);
+    line-height: 1.6;
+    letter-spacing: .02em;
+}
+
+.item p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 2;
+    color: var(--text);
+}
+
+/* 補足のかたまり */
+/* ------------------------------------------------------------
+   補足のノート
+   ペンのアイコン＋細い縦罫。地は薄いグレーで、本文と区別する
+   ------------------------------------------------------------ */
+.note-block {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: stretch;
+    margin-top: 34px;
+    padding: 24px 26px 24px 0;
+    background: #F5F4F3;
+}
+
+.note-block .pen {
+    display: block;
+    align-self: center;
+    justify-self: center;
+    color: var(--muted);
+}
+
+.note-block .note-body {
+    padding-left: 24px;
+    border-left: 1px solid #DAD8D5;
+}
+
+.note-block.on-dark-tint .pen {
+    color: var(--navy);
+}
+
+.note-block h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--navy);
+}
+
+.note-block p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 2;
+    color: var(--text);
+}
+
+@media (max-width: 620px) {
+    .note-block {
+        grid-template-columns: 50px minmax(0, 1fr);
+        padding: 20px 18px 20px 0;
+    }
+
+    .note-block .pen {
+        width: 22px;
+        height: 22px;
+    }
+
+    .note-block .note-body {
+        padding-left: 18px;
+    }
+}
+
+/* 箇条書き */
+.dot-list {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0 0;
+}
+
+.dot-list li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 11px;
+    font-size: 16px;
+    line-height: 1.9;
+    color: var(--text);
+}
+
+.dot-list li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: .84em;
+    width: 9px;
+    height: 1px;
+    background: var(--main-deep);
+}
+
+/* ラベル＋説明 */
+.points {
+    border-top: 1px solid var(--rule);
+    margin-top: 26px;
+}
+
+.point {
+    display: grid;
+    grid-template-columns: 13em 1fr;
+    gap: 0 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 16px;
+    line-height: 1.9;
+}
+
+.point strong {
+    color: var(--main-ink);
+    font-weight: 700;
+}
+
+@media (max-width: 820px) {
+    .point {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}
+
+/* ステップ表示 */
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+}
+
+.chips .chip {
+    background: var(--white);
+    color: var(--navy);
+    border: 1px solid var(--rule-dark);
+    padding: 9px 17px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.chips .chip:last-child {
+    background: var(--accent-fill);
+    color: var(--white);
+}
+
+.chips .arw {
+    color: var(--main-deep);
+    font-size: 16px;
+}
+
+/* ============================================================
+   タイムライン（縦線で1日の流れを示す）
+   ============================================================ */
+.timeline {
+    list-style: none;
+    margin: 34px 0 0;
+    padding: 0;
+}
+
+.timeline li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 82px 1fr;
+    gap: 0 26px;
+    padding: 0 0 30px 0;
+}
+
+.timeline li:last-child {
+    padding-bottom: 0;
+}
+
+/* 時刻の右側に縦線を引く */
+.timeline li::before {
+    content: "";
+    position: absolute;
+    left: 82px;
+    top: 12px;
+    bottom: -12px;
+    width: 2px;
+    background: var(--main-deep);
+    transform: translateX(12px);
+}
+
+.timeline li:last-child::before {
+    display: none;
+}
+
+/* 節目の丸 */
+.timeline li::after {
+    content: "";
+    position: absolute;
+    left: 82px;
+    top: 8px;
+    transform: translateX(6px);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--main-deep);
+    border: 3px solid var(--white);
+}
+
+section.plain .timeline li::after,
+section.tinted .timeline li::after {
+    border-color: var(--white);
+}
+
+.timeline li.rest::after {
+    background: var(--rule-dark);
+}
+
+.timeline li.rest .t {
+    color: var(--muted);
+}
+
+.timeline .time {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--main-ink);
+    letter-spacing: .04em;
+    line-height: 1.5;
+    text-align: right;
+    padding-top: 2px;
+}
+
+.timeline .body {
+    padding-left: 18px;
+}
+
+.timeline .t {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.55;
+}
+
+.timeline p {
+    margin: 8px 0 0;
+    font-size: 16px;
+    line-height: 1.9;
+    color: var(--text-sub);
+}
+
+@media (max-width: 620px) {
+    .timeline li {
+        grid-template-columns: 62px 1fr;
+        gap: 0 18px;
+    }
+
+    .timeline li::before {
+        left: 62px;
+        transform: translateX(8px);
+    }
+
+    .timeline li::after {
+        left: 62px;
+        transform: translateX(2px);
+    }
+
+    .timeline .time {
+        font-size: 18px;
+    }
+
+    .timeline .body {
+        padding-left: 14px;
+    }
+}
+
+/* ============================================================
+   実績（濃色の面）
+   ============================================================ */
+/* ------------------------------------------------------------
+   実績・ポイントの強調ボックス
+   見出しのタブを枠の上にまたがせて、目に留まるようにする
+   ------------------------------------------------------------ */
+.showcase {
+    background: var(--white);
+    padding: 52px 0;
+    /* border-top: 1px solid var(--border); */
+}
+
+.showcase-box {
+    position: relative;
+    margin-top: 16px;
+    padding: 38px 32px 32px;
+    background: #FDF8F9;
+    border: 2px solid var(--main-deep);
+}
+
+/* 見出しのタブ。枠の上辺にまたがる */
+.showcase .lbl {
+    position: absolute;
+    top: -17px;
+    left: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 6px 18px 7px 14px;
+    background: var(--main-deep);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    line-height: 1.6;
+    white-space: nowrap;
+}
+
+.showcase .lbl .bulb {
+    flex: none;
+    display: block;
+    color: #FFE9A8;
+}
+
+.showcase .txt {
+    font-family: var(--serif);
+    font-size: clamp(18px, 2.4vw, 24px);
+    line-height: 1.9;
+    margin: 0;
+    color: var(--navy);
+}
+
+.showcase .note {
+    margin: 20px 0 0;
+    padding-top: 18px;
+    font-size: 16px;
+    line-height: 1.9;
+    color: var(--text-sub);
+    border-top: 1px dashed var(--main);
+}
+
+@media (max-width: 620px) {
+    .showcase-box {
+        padding: 34px 20px 26px;
+    }
+
+    .showcase .lbl {
+        left: 14px;
+        font-size: 13px;
+        padding: 5px 14px 6px 11px;
+    }
+}
+
+/* ============================================================
+   求める人物像
+   ============================================================ */
+.req {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-top: 34px;
+}
+
+@media (max-width: 900px) {
+    .req {
+        grid-template-columns: 1fr;
+    }
+}
+
+.req .box {
+    padding: 30px;
+}
+
+.req .must {
+    background: var(--white);
+    border-top: 4px solid var(--navy);
+}
+
+.req .want {
+    background: var(--bg-section);
+    border-top: 4px solid var(--main-deep);
+    color: var(--text);
+}
+
+.req h3 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    margin: 0 0 14px;
+    color: var(--main-ink);
+}
+
+.req .want h3 {
+    color: var(--main-ink);
+}
+
+.req .headline {
+    font-family: var(--serif);
+    font-size: 24px;
+    color: var(--navy);
+    margin: 0 0 14px;
+    line-height: 1.6;
+}
+
+.req .want .headline {
+    color: var(--navy);
+}
+
+.req .want .dot-list li {
+    color: var(--text);
+}
+
+.req .want .dot-list li::before {
+    background: var(--main-deep);
+}
+
+.req .want .muted {
+    color: var(--muted);
+}
+
+.req .want .tag {
+    color: var(--main-ink);
+    border-color: var(--main-deep);
+    background: var(--white);
+}
+
+@media (max-width: 900px) {
+    .req .box {
+        padding: 26px 22px;
+    }
+}
+
+/* ============================================================
+   募集要項（罫線の表）
+   ============================================================ */
+.outline {
+    margin-top: 32px;
+    border-top: 2px solid var(--navy);
+}
+
+.outline .row {
+    display: grid;
+    grid-template-columns: 210px 1fr;
+    border-bottom: 1px solid var(--rule);
+}
+
+.outline .k {
+    padding: 20px 20px 20px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.7;
+}
+
+.outline .v {
+    padding: 20px 0 20px 24px;
+    font-size: 16px;
+    line-height: 2;
+    color: var(--text);
+    white-space: pre-line;
+    border-left: 1px solid var(--rule);
+}
+
+.outline .v a {
+    color: var(--main-ink);
+    font-weight: 600;
+}
+
+.outline .v .note {
+    display: block;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dotted var(--rule-dark);
+    font-size: 14px;
+    line-height: 1.95;
+    color: var(--muted);
+}
+
+@media (max-width: 820px) {
+    .outline .row {
+        grid-template-columns: 1fr;
+    }
+
+    .outline .k {
+        padding: 16px 0 0;
+    }
+
+    .outline .v {
+        padding: 6px 0 18px;
+        border-left: 0;
+    }
+}
+
+/* ============================================================
+   選考フロー（縦線で流れを示す）
+   ============================================================ */
+.flow-sec {
+    background: var(--white);
+    padding: 62px 0;
+    /* border-top: 1px solid var(--border);
+    border-top: 1px solid #E0BFC6; */
+    /* border-bottom: 1px solid #E0BFC6; */
+}
+
+.steps {
+    margin-top: 36px;
+    list-style: none;
+    padding: 0;
+}
+
+.step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 0 24px;
+    padding: 0 0 32px 0;
+}
+
+.step:last-child {
+    padding-bottom: 0;
+}
+
+/* ステップ同士をつなぐ縦線 */
+.step::before {
+    content: "";
+    position: absolute;
+    left: 20px;
+    top: 42px;
+    bottom: -8px;
+    width: 2px;
+    background: var(--navy);
+}
+
+.step:last-child::before {
+    display: none;
+}
+
+/* 番号の丸 */
+.step .n {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+
+.step.last .n {
+    background: var(--accent-fill);
+}
+
+.step.last::before {
+    background: var(--accent-fill);
+}
+
+.step .body {
+    padding-top: 5px;
+}
+
+.step .t {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.55;
+}
+
+.step.last .t {
+    color: var(--accent-ink);
+}
+
+.step p {
+    margin: 8px 0 0;
+    font-size: 16px;
+    line-height: 1.9;
+    color: var(--text-sub);
+}
+
+.flow-note {
+    color: var(--text-sub);
+    margin-top: 26px;
+    padding-left: 66px;
+}
+
+@media (max-width: 620px) {
+    .step {
+        grid-template-columns: 34px 1fr;
+        gap: 0 18px;
+    }
+
+    .step .n {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    .step::before {
+        left: 16px;
+        top: 34px;
+    }
+
+    .flow-note {
+        padding-left: 0;
+    }
+}
+
+/* ============================================================
+   理念
+   ============================================================ */
+.vision {
+    margin-top: 30px;
+}
+
+.vision .lines {
+    font-family: var(--serif);
+    font-size: clamp(20px, 3vw, 24px);
+    line-height: 1.9;
+    color: var(--navy);
+    margin: 16px 0 0;
+    padding-left: 22px;
+    border-left: 5px solid var(--main-deep);
+}
+
+.vision .by {
+    margin: 20px 0 0;
+    font-size: 14px;
+    color: var(--text-sub);
+}
+
+.vision .body {
+    margin: 30px 0 0;
+    padding-top: 30px;
+    border-top: 1px solid var(--rule);
+    font-size: 16px;
+    line-height: 2.05;
+    color: var(--text);
+    white-space: pre-line;
+}
+
+/* ============================================================
+   フッター
+   ============================================================ */
+.site-footer {
+    background: var(--navy-deep);
+    color: var(--on-dark-sub);
+    padding: 44px 0;
+    font-size: 14px;
+    line-height: 2.05;
+}
+
+.site-footer p {
+    margin: 0 0 8px;
+}
+
+/* ============================================================
+   ボタン（管理画面で使用）
+   ============================================================ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 26px;
+    border: 1px solid transparent;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: background .16s, color .16s, border-color .16s;
+}
+
+.btn-primary {
+    background: var(--accent-fill);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #A83A25;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--navy);
+    border-color: var(--navy);
+}
+
+.btn-ghost:hover {
+    background: var(--navy);
+    color: #fff;
+}
+
+.btn-quiet {
+    background: var(--bg-section);
+    color: var(--main-ink);
+}
+
+.btn-quiet:hover {
+    background: var(--main);
+    color: #fff;
+}
+
+.btn-danger {
+    background: transparent;
+    color: #9C4444;
+    border-color: #D9B4B4;
+}
+
+.btn-danger:hover {
+    background: #9C4444;
+    color: #fff;
+}
+
+.btn-sm {
+    padding: 9px 17px;
+    font-size: 14px;
+}
+
+
+/* ============================================================
+   目次（PCのみ左に固定）
+   本文の構造は変えず、body に左余白を作ってその位置に置く。
+   ============================================================ */
+.toc {
+    display: none;
+}
+
+@media (min-width: 1200px) {
+    body {
+        padding-left: 248px;
+    }
+
+    .toc {
+        display: block;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 248px;
+        z-index: 70;
+        background: var(--white);
+        border-right: 1px solid var(--border);
+        padding: 26px 22px 26px 26px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .toc-ttl {
+        margin: 0 0 14px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: .1em;
+        color: var(--main-ink);
+        padding-bottom: 9px;
+        border-bottom: 2px solid var(--main-deep);
+    }
+
+    .toc ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        counter-reset: toc;
+    }
+
+    .toc li {
+        counter-increment: toc;
+    }
+
+    .toc a {
+        display: block;
+        position: relative;
+        padding: 9px 0 9px 26px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-sub);
+        text-decoration: none;
+        border-bottom: 1px solid #F1EBEA;
+    }
+
+    .toc a::before {
+        content: counter(toc, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 9px;
+        font-family: var(--serif);
+        font-size: 14px;
+        color: var(--rule-dark);
+        letter-spacing: .02em;
+    }
+
+    .toc a:hover {
+        color: var(--main-ink);
+    }
+
+    /* いま見ているセクション */
+    .toc a.on {
+        color: var(--main-ink);
+        font-weight: 700;
+    }
+
+    .toc a.on::before {
+        color: var(--main-deep);
+    }
+
+    .toc a.on::after {
+        content: "";
+        position: absolute;
+        left: -26px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--main-deep);
+    }
+
+    /* 目次があるぶん、ヘッダーの位置も合わせる */
+    .site-header {
+        padding-left: 0;
+    }
+}
+
+@media (min-width: 1560px) {
+
+    /* 画面が広いときは、本文が右に寄りすぎないよう戻す */
+    body {
+        padding-left: 0;
+    }
+
+    .toc {
+        left: calc((100vw - 980px) / 2 - 268px);
+        border-right: 0;
+        border-left: 1px solid var(--border);
+        top: 96px;
+        bottom: auto;
+        max-height: calc(100vh - 140px);
+        background: transparent;
+    }
+}
+
+/* ============================================================
+   年収の推移（縦のタイムライン。詳細は金額の右に並べる）
+   ============================================================ */
+.lead-p {
+    margin: 0 0 30px;
+    font-size: 18px;
+    line-height: 2;
+    color: var(--text-sub);
+    /* max-width: 40em; */
+}
+
+.salary-steps {
+    list-style: none;
+    margin: 34px 0 0;
+    padding: 0;
+}
+
+.salary-steps li {
+    position: relative;
+    display: grid;
+    /* 金額の列は中身に合わせて伸びる。ただし説明の幅は 240px 以上残す。
+       固定幅にすると、長い文字列が隣の説明に重なってしまう。 */
+    grid-template-columns: 96px minmax(150px, max-content) minmax(240px, 1fr);
+    gap: 0 26px;
+    align-items: center;
+    padding: 0 0 64px 0;
+}
+
+.salary-steps li:last-child {
+    padding-bottom: 0;
+}
+
+/* 段階をつなぐ縦線 */
+.salary-steps li::before {
+    content: "";
+    position: absolute;
+    left: 96px;
+    top: 16px;
+    bottom: -16px;
+    width: 2px;
+    background: var(--main-deep);
+    transform: translateX(12px);
+}
+
+.salary-steps li:last-child::before {
+    display: none;
+}
+
+/* 節目の丸 */
+.salary-steps li::after {
+    content: "";
+    position: absolute;
+    left: 96px;
+    top: 10px;
+    transform: translateX(6px);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--main-deep);
+    border: 3px solid var(--white);
+}
+
+/* 最後の段階だけ塗り分けて、到達点だと分かるようにする */
+.salary-steps li:last-child::after {
+    background: var(--accent-fill);
+}
+
+.salary-steps .stage {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--main-ink);
+    letter-spacing: .04em;
+    line-height: 1.5;
+    text-align: right;
+}
+
+.salary-steps .amount {
+    padding-left: 18px;
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: .01em;
+    line-height: 1.3;
+    /* 金額（約420万円）は途中で折らない。
+       それより長い文章が入ったときは、下の len- で小さくしたうえで、
+       それでも収まらなければ折り返す。はみ出させない。 */
+    white-space: nowrap;
+    overflow-wrap: anywhere;
+}
+
+/* 「役職手当／時間外手当」のような文章が入る段階向け */
+.salary-steps .amount.len-l {
+    font-size: 24px;
+    line-height: 1.45;
+    white-space: normal;
+}
+
+.salary-steps .amount.len-xl {
+    font-size: 20px;
+    line-height: 1.55;
+    white-space: normal;
+}
+
+.salary-steps .note {
+    font-size: 16px;
+    line-height: 1.85;
+    color: var(--text-sub);
+    padding-left: 22px;
+    border-left: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+
+    /* 詳細を金額の下へ落とす */
+    .salary-steps li {
+        grid-template-columns: 84px minmax(0, 1fr);
+        align-items: start;
+        gap: 0 20px;
+        padding-bottom: 28px;
+    }
+
+    .salary-steps li::before {
+        left: 84px;
+        transform: translateX(10px);
+    }
+
+    .salary-steps li::after {
+        left: 84px;
+        top: 8px;
+        transform: translateX(4px);
+    }
+
+    .salary-steps .stage {
+        font-size: 16px;
+        padding-top: 4px;
+    }
+
+    .salary-steps .amount {
+        padding-left: 16px;
+        font-size: 28px;
+    }
+
+    .salary-steps .amount.len-l { font-size: 22px; }
+    .salary-steps .amount.len-xl { font-size: 19px; }
+
+    .salary-steps .note {
+        grid-column: 2;
+        padding-left: 16px;
+        margin-top: 6px;
+        border-left: 0;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 560px) {
+    .salary-steps li {
+        grid-template-columns: 68px minmax(0, 1fr);
+        gap: 0 14px;
+    }
+
+    .salary-steps li::before {
+        left: 68px;
+        transform: translateX(8px);
+    }
+
+    .salary-steps li::after {
+        left: 68px;
+        transform: translateX(2px);
+    }
+
+    .salary-steps .stage {
+        font-size: 15px;
+    }
+
+    .salary-steps .amount {
+        padding-left: 12px;
+        font-size: 24px;
+    }
+
+    .salary-steps .amount.len-l { font-size: 20px; }
+    .salary-steps .amount.len-xl { font-size: 18px; }
+
+    .salary-steps .note {
+        padding-left: 12px;
+        font-size: 14px;
+    }
+}
+
+
+/* ============================================================
+   パスワードの表示・非表示ボタン
+   ============================================================ */
+.pw-wrap {
+    position: relative;
+    display: block;
+}
+
+.pw-wrap>input {
+    /* ボタンのぶんだけ右に余白をつくる */
+    padding-right: 46px !important;
+}
+
+.pw-eye {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    line-height: 0;
+}
+
+.pw-eye:hover {
+    color: var(--main-ink);
+}
+
+.pw-eye:active {
+    color: var(--main-deep);
+}
+
+.pw-eye:focus-visible {
+    outline: none;
+    color: var(--main-ink);
+    box-shadow: inset 0 0 0 2px var(--main-deep);
+}
+
+.pw-eye svg {
+    display: block;
+}
+/* ============================================================
+   非公開の求人を管理者が確認しているときの帯
+   ============================================================ */
+.preview-bar {
+    background: #3F3B3C;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.preview-bar .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    padding: 10px 0;
+}
+
+.preview-bar strong {
+    font-weight: 700;
+    color: #FFC9D6;
+}
+
+.preview-bar a {
+    margin-left: auto;
+    color: #fff;
+    text-decoration: underline;
+    white-space: nowrap;
+}

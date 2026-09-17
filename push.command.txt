@@ -1,0 +1,378 @@
+#!/bin/bash
+# ============================================================
+#  求人票を本番に反映する
+#
+#  使い方：このファイルをダブルクリック → y を押す
+#
+#  ・json/ フォルダに入っているJSONだけを送ります
+#  ・新しい求人は「限定公開」で入ります（管理画面で確認してから公開）
+#  ・既にサーバーにある求人は、公開状態をそのまま維持して内容だけ更新します
+#    → 公開中の求人が限定公開に戻ることはありません
+#  ・送信が終わったJSONは json/_sent/ に自動で移動します
+# ============================================================
+
+cd "$(dirname "$0")" || exit 1
+
+# ------------------------------------------------------------
+#  設定（サーバーを移したときはここを直す）
+# ------------------------------------------------------------
+API_URL="https://ichi-web-home.com/recruit-file/public/api/import.php"
+API_TOKEN="（バックアップでは伏せています）"
+
+ROLE="admin"       # admin = 公開まで自分で行う（市川さん用）
+                   # member = 送信までを担当し、公開は管理者に依頼する
+                   #   ※ member にすると、管理画面の案内を出さなくなります
+
+OVERWRITE="true"   # 同じIDがあれば内容を上書きする
+PUBLISH="false"    # 新規の求人を公開状態で入れるか（false = 限定公開で入れる）
+FORCE="false"      # true にすると、既存求人の公開状態も PUBLISH の指定で上書きする
+                   #   ※ 通常は false のまま。true にすると公開中の求人が限定公開に戻ります
+
+# ------------------------------------------------------------
+
+BASE_URL="${API_URL%/api/import.php}"
+
+c_b=$'\033[1m'; c_g=$'\033[32m'; c_y=$'\033[33m'; c_r=$'\033[31m'; c_0=$'\033[0m'
+finish() { printf '\n%s' "Enterキーで閉じます。"; read -r; exit "${1:-0}"; }
+
+# ---------- 動く環境か先に確かめる ----------
+# 新しいMacでは python3 が入っていないことがある（Xcodeのコマンドラインツールに含まれる）
+MISSING=""
+command -v curl   >/dev/null 2>&1 || MISSING="${MISSING} curl"
+command -v python3 >/dev/null 2>&1 || MISSING="${MISSING} python3"
+if [ -n "$MISSING" ]; then
+  printf '%s必要なコマンドが見つかりません:%s%s\n\n' "$c_r" "$MISSING" "$c_0"
+  printf 'ターミナルで次を実行して、案内に従ってインストールしてください。\n\n'
+  printf '    xcode-select --install\n\n'
+  printf 'インストール後、もう一度このファイルをダブルクリックしてください。\n'
+  finish 1
+fi
+
+printf '%s求人票 反映ツール%s\n' "$c_b" "$c_0"
+printf '送信先   : %s\n' "$API_URL"
+printf '新規求人 : %s\n' "$([ "$PUBLISH" = "true" ] && echo '公開状態で入れる' || echo '限定公開で入れる')"
+if [ "$FORCE" = "true" ]; then
+  printf '既存求人 : %s内容を更新し、公開状態も上書きする%s\n\n' "$c_r" "$c_0"
+else
+  printf '既存求人 : 内容を更新し、公開状態はそのまま維持する\n\n'
+fi
+
+# ---------- 送るファイルを集める ----------
+shopt -s nullglob
+# アンダースコアで始まるファイルは送らない（_server.json などの作業用ファイル）
+FILES=()
+for f in json/*.json; do
+  case "$(basename "$f")" in
+    _*) continue ;;
+    *)  FILES+=("$f") ;;
+  esac
+done
+
+# ---------- サーバーに今ある求人を先に調べる ----------
+# 送るファイルが無くてもここは必ず通る。
+# このツールは「サーバーの現況を手元に取り込む」役割も持っているため、
+# 送信するものが無いときでも json/_server.json を最新にしてから終わる。
+printf 'サーバーの状態を確認中...\n\n'
+EXISTING=$(curl -sS -m 20 \
+  -H "Authorization: Bearer ${API_TOKEN}" \
+  -H "X-Api-Token: ${API_TOKEN}" \
+  "${API_URL}?ids=1&full=1" 2>/dev/null)
+
+# 取れた現況は json/_server.json に保存しておく。
+# 次に求人票を作るとき、AIがこれを読んで
+# 「その会社はもう誰かが登録済み」「カテゴリはこの表記」を判断できる。
+# full=1 が効いていれば本文（data）も入るので、既存求人の書き換えにも使える。
+mkdir -p json
+if printf '%s' "$EXISTING" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('ok') else 1)" 2>/dev/null; then
+  printf '%s' "$EXISTING" > json/_server.json
+  read -r SRV_N SRV_FULL <<<"$(printf '%s' "$EXISTING" | python3 -c "
+import json,sys
+j=json.load(sys.stdin).get('jobs',[])
+print(len(j), sum(1 for x in j if x.get('data')))" 2>/dev/null)"
+  printf '  現在サーバーに %s 件の求人があります（全員ぶん）\n' "${SRV_N:-?}"
+  if [ "${SRV_FULL:-0}" -gt 0 ]; then
+    printf '  そのうち %s 件は本文も取り込みました\n\n' "$SRV_FULL"
+  else
+    printf '%s  本文は取り込めませんでした。\n' "$c_y"
+    printf '  サーバーの public/api/import.php が古い可能性があります。%s\n\n' "$c_0"
+  fi
+else
+  printf '%s  サーバーの状態を取得できませんでした。前回の記録で進みます。%s\n\n' "$c_y" "$c_0"
+  [ -f json/_server.json ] && EXISTING=$(cat json/_server.json)
+fi
+
+if [ ${#FILES[@]} -eq 0 ]; then
+  printf '%sjson フォルダに送るJSONがありません。%s\n' "$c_y" "$c_0"
+  printf '（送信済みのものは json/_sent/ に移動しています）\n'
+  printf 'サーバーの現況は json/_server.json に保存しました。\n'
+  finish 0
+fi
+
+# ---------- 中身を確認して一覧表示 ----------
+SUMMARY=$(EXISTING_JSON="$EXISTING" python3 - "${FILES[@]}" <<'PY'
+import json, sys, glob, os
+
+# サーバーに今ある求人（?ids=1 の結果）。取れなければ空のまま進む。
+server = {}
+server_cats = []
+try:
+    _d = json.loads(os.environ.get('EXISTING_JSON') or '{}')
+    if _d.get('ok'):
+        for _j in _d.get('jobs', []):
+            server[_j.get('id')] = _j
+        server_cats = _d.get('categories', [])
+except Exception:
+    pass
+
+# カテゴリの実績を集める（表記ゆれの検知に使う）
+#   1. サーバーの現況（?ids=1）… 全員ぶんが入っているので、これを正とする
+#   2. 取れなければ自分の送信済みJSON … 自分ぶんだけになる
+known = set(server_cats)
+if not known:
+    for kf in glob.glob('json/_sent/*.json'):
+        try:
+            with open(kf, encoding='utf-8') as fh:
+                kd = json.load(fh)
+            kitems = kd['jobs'] if isinstance(kd, dict) and 'jobs' in kd else (kd if isinstance(kd, list) else [kd])
+            for kj in kitems:
+                if isinstance(kj, dict) and kj.get('category'):
+                    known.add(kj['category'])
+        except Exception:
+            pass
+
+# サーバーにある会社名（別IDで同じ会社を二重登録していないか調べる）
+def norm_co(x):
+    x = str(x or '')
+    for w in ('株式会社', '有限会社', '合同会社', '（株）', '(株)', '　', ' ', '・', '＝'):
+        x = x.replace(w, '')
+    return x.lower()
+
+server_companies = {}
+for _j in server.values():
+    server_companies.setdefault(norm_co(_j.get('company')), []).append(_j)
+
+new_cats = set()
+
+for path in sys.argv[1:]:
+    try:
+        with open(path, encoding='utf-8') as f:
+            d = json.load(f)
+    except Exception as e:
+        print(f"NG\t{path}\t読み込めません: {e}")
+        continue
+    items = d['jobs'] if isinstance(d, dict) and 'jobs' in d else (d if isinstance(d, list) else [d])
+    for j in items:
+        if not isinstance(j, dict):
+            print(f"NG\t{path}\t形式が不正"); continue
+        jid = j.get('id', '')
+        co  = j.get('company', '')
+        cat = j.get('category', '')
+        is_merge = bool(j.get('_merge'))
+        if not jid or not co:
+            print(f"NG\t{path}\tid または company がありません"); continue
+        if is_merge:
+            # 部分更新は、書いた項目だけを差し替える。カテゴリは既存のまま
+            keys = '／'.join(k for k in j if k not in ('_merge', 'id', 'company'))
+            ex = server.get(jid)
+            if ex is None and server:
+                print(f"NG\t{path}\t部分更新の指定ですが、サーバーにこのIDがありません（{jid}）"); continue
+            print(f"OK\t{jid}\t部分更新\t{co}\t{keys} だけ差し替え")
+            continue
+        if not cat:
+            print(f"NG\t{path}\t職種カテゴリがありません"); continue
+        if cat not in known:
+            new_cats.add(cat)
+
+        # サーバーに同じIDがあるか
+        ex = server.get(jid)
+        if ex is None:
+            mark = '新規' if server else '－'
+            # IDは違うが、同じ会社が既に登録されていないか
+            for other in server_companies.get(norm_co(co), []):
+                if other.get('id') != jid:
+                    print(f"DUP\t{jid}\t{co}\t{other.get('id')}\t{other.get('company')}")
+        else:
+            mark = '更新'
+            st = ex.get('status', 'draft')
+            if st == 'published':
+                mark = '更新（公開中）'
+            elif st == 'private':
+                mark = '更新（非公開）'
+            if ex.get('hasFee'):
+                mark += '＋フィー保持'
+        print(f"OK\t{jid}\t{cat + (' ★新' if cat not in known else '')}\t{co}\t{mark}")
+
+for c in sorted(new_cats):
+    # 既存カテゴリ・今回の他の新カテゴリの両方と照合する
+    pool = (known | new_cats) - {c}
+    similar = [k for k in sorted(pool) if k in c or c in k]
+    print(f"NEWCAT\t{c}\t{'／'.join(similar)}")
+PY
+) || { printf '%sJSONの読み込みに失敗しました。%s\n' "$c_r" "$c_0"; finish 1; }
+
+printf '%s送信する求人%s\n' "$c_b" "$c_0"
+NG=0
+NEWCAT_LINES=""
+DUP_LINES=""
+HAS_UPDATE=0
+while IFS=$'\t' read -r st a b c d; do
+  [ -z "$st" ] && continue
+  case "$st" in
+    OK)
+      case "$d" in
+        *だけ差し替え) col="$c_g" ;;
+        更新*)         col="$c_y"; HAS_UPDATE=1 ;;
+        新規)          col="$c_g" ;;
+        *)             col="" ;;
+      esac
+      printf '  ・%-24s %-12s %s%-26s%s %s\n' "$a" "$b" "$col" "$d" "$c_0" "$c"
+      ;;
+    NEWCAT) NEWCAT_LINES="${NEWCAT_LINES}${a}|${b}"$'\n' ;;
+    DUP)    DUP_LINES="${DUP_LINES}${a}|${b}|${c}|${d}"$'\n' ;;
+    *)      printf '  %s! %s %s%s\n' "$c_r" "$a" "$b" "$c_0"; NG=1 ;;
+  esac
+done <<< "$SUMMARY"
+
+# すでにサーバーにある求人を上書きする場合は、その意味をはっきり書く
+if [ "$HAS_UPDATE" = "1" ]; then
+  printf '\n%s既にサーバーにある求人が含まれています%s\n' "$c_b" "$c_0"
+  printf '  ・求人票の中身は、送るJSONの内容で%s置き換わります%s\n' "$c_y" "$c_0"
+  printf '    （管理画面で直した文章がある場合、それは元に戻ります）\n'
+  printf '  ・%s公開状態（公開中／限定公開／非公開）は、そのまま維持されます%s\n' "$c_g" "$c_0"
+  printf '  ・%s成約フィーも、そのまま残ります%s（管理画面でのみ入力する項目のため）\n' "$c_g" "$c_0"
+  printf '  中身を置き換えたくない求人があれば、いま中止して json/ から外してください。\n'
+fi
+
+# 別のIDで同じ会社が既に登録されていたら知らせる（二重登録の防止）
+if [ -n "$DUP_LINES" ]; then
+  printf '\n%s同じ会社が、別のIDで既に登録されています%s\n' "$c_r" "$c_0"
+  while IFS='|' read -r nid nco oid oco; do
+    [ -z "$nid" ] && continue
+    printf '  %s！%s %s（%s）\n' "$c_r" "$c_0" "$nco" "$nid"
+    printf '      既存：%s（%s）\n' "$oco" "$oid"
+  done <<< "$DUP_LINES"
+  printf '  このまま送ると、一覧ページに同じ会社が2件並びます。\n'
+  printf '  ・既存を差し替えたい → 中止して、JSONのIDを既存のIDに変えてください\n'
+  printf '  ・別の求人として載せたい → そのまま y で進めて構いません\n'
+fi
+
+# 新しい職種カテゴリが登場したら知らせる
+if [ -n "$NEWCAT_LINES" ]; then
+  printf '\n%s新しい職種カテゴリ%s\n' "$c_b" "$c_0"
+  while IFS='|' read -r cat similar; do
+    [ -z "$cat" ] && continue
+    printf '  %s★ %s%s   一覧ページに新しいセクションが増えます\n' "$c_y" "$cat" "$c_0"
+    if [ -n "$similar" ]; then
+      printf '     %s似た名前が既にあります：%s  表記ゆれではありませんか？%s\n' "$c_r" "$similar" "$c_0"
+    fi
+  done <<< "$NEWCAT_LINES"
+  printf '     並び順を指定するときは admin/config.php の CATEGORY_ORDER に追記してください。\n'
+fi
+
+[ "$NG" = "1" ] && { printf '\n%s不正なファイルがあります。修正してからやり直してください。%s\n' "$c_r" "$c_0"; finish 1; }
+
+printf '\nこの内容で反映しますか？ [y/N]: '
+read -r ANSWER
+case "$ANSWER" in
+  y|Y|yes|YES) ;;
+  *) printf '中止しました。\n'; finish 0 ;;
+esac
+
+# ---------- ひとつの配列にまとめる ----------
+PAYLOAD=$(python3 - "${FILES[@]}" <<'PY'
+import json, sys
+jobs = []
+for path in sys.argv[1:]:
+    with open(path, encoding='utf-8') as f:
+        d = json.load(f)
+    if isinstance(d, dict) and 'jobs' in d: jobs.extend(d['jobs'])
+    elif isinstance(d, list):               jobs.extend(d)
+    else:                                   jobs.append(d)
+print(json.dumps({'jobs': jobs}, ensure_ascii=False))
+PY
+) || { printf '%sJSONのまとめに失敗しました。%s\n' "$c_r" "$c_0"; finish 1; }
+
+printf '\n送信中...\n'
+
+RESPONSE=$(curl -sS -w $'\n%{http_code}' \
+  -X POST "${API_URL}?overwrite=${OVERWRITE}&publish=${PUBLISH}&force=${FORCE}" \
+  -H "Authorization: Bearer ${API_TOKEN}" \
+  -H "X-Api-Token: ${API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  --data-binary "$PAYLOAD" 2>&1)
+
+CODE=$(printf '%s' "$RESPONSE" | tail -n1)
+BODY=$(printf '%s' "$RESPONSE" | sed '$d')
+
+printf '\n'
+if [ "$CODE" != "200" ]; then
+  printf '%s--- エラー (HTTP %s) ---%s\n' "$c_r" "$CODE" "$c_0"
+  printf '%s\n' "$BODY"
+  printf '\n確認してみてください:\n  %s/check.php\n' "$BASE_URL"
+  finish 1
+fi
+
+printf '%s--- 反映しました ---%s\n' "$c_g" "$c_0"
+
+RESULT=$(python3 - "$BODY" "$BASE_URL" <<'PY'
+import json, sys
+try:
+    d = json.loads(sys.argv[1])
+except Exception:
+    print("RAW\t" + sys.argv[1]); raise SystemExit(0)
+base = sys.argv[2]
+if not d.get('ok'):
+    print("ERR\t" + str(d.get('error', '不明なエラー'))); raise SystemExit(0)
+kept = set(d.get('keptPublic', []))
+for i in d.get('added', []):   print(f"NEW\t{i}\t{base}/job/{i}/")
+for i in d.get('updated', []):
+    tag = "UPDPUB" if i in kept else "UPD"
+    print(f"{tag}\t{i}\t{base}/job/{i}/")
+for s in d.get('skipped', []): print(f"SKIP\t{s}\t")
+print("STATUS\t" + d.get('newStatus', d.get('status', '')) + "\t" + str(len(d.get('added', []))))
+PY
+)
+
+DONE_IDS=()
+while IFS=$'\t' read -r kind a b; do
+  case "$kind" in
+    NEW)    printf '  %s新規%s        %-26s %s\n' "$c_g" "$c_0" "$a" "$b"; DONE_IDS+=("$a") ;;
+    UPDPUB) printf '  更新（公開中） %-26s %s\n' "$a" "$b"; DONE_IDS+=("$a") ;;
+    UPD)    printf '  更新           %-26s %s\n' "$a" "$b"; DONE_IDS+=("$a") ;;
+    SKIP)   printf '  %sスキップ%s     %s\n' "$c_y" "$c_0" "$a" ;;
+    ERR)    printf '  %sエラー%s       %s\n' "$c_r" "$c_0" "$a" ;;
+    STATUS)
+      if [ "$b" != "0" ]; then
+        if [ "$a" = "published" ]; then
+          printf '\n  %s新規の求人は公開済みです。上のURLをそのまま求職者にお渡しいただけます。%s\n' "$c_g" "$c_0"
+        elif [ "$ROLE" = "member" ]; then
+          printf '\n  %s新規の求人は限定公開で入りました。%s\n' "$c_y" "$c_0"
+          printf '  上のURLをブラウザで開いて、内容をご確認ください。\n'
+          printf '  確認できたら市川さんに連絡してください。公開は市川さんが行います。\n'
+        else
+          printf '\n  %s新規の求人は限定公開で入りました。管理画面で内容を確認し、公開状態を「公開中」にしてください。%s\n' "$c_y" "$c_0"
+        fi
+      fi
+      printf '  「更新（公開中）」の求人は、公開状態のまま内容だけ差し替わっています。\n' ;;
+    RAW)  printf '  %s\n' "$a" ;;
+  esac
+done <<< "$RESULT"
+
+# ---------- 送信できたJSONを _sent/ へ移動 ----------
+if [ ${#DONE_IDS[@]} -gt 0 ]; then
+  mkdir -p json/_sent
+  MOVED=0
+  for id in "${DONE_IDS[@]}"; do
+    if [ -f "json/${id}.json" ]; then
+      mv -f "json/${id}.json" "json/_sent/${id}.json" && MOVED=$((MOVED+1))
+    fi
+  done
+  [ "$MOVED" -gt 0 ] && printf '\n  送信済みの %s 件を json/_sent/ に移動しました。\n' "$MOVED"
+fi
+
+printf '\n'
+if [ "$ROLE" != "member" ]; then
+  printf '管理画面 : %s/admin/\n' "$BASE_URL"
+fi
+printf '一覧ページ: %s/list.php\n' "$BASE_URL"
+finish 0

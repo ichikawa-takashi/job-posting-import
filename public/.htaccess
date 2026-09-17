@@ -1,0 +1,28 @@
+# ============================================================
+#  求人票サイト
+#  ドキュメントルート直下でも、/recruit-file/ のような
+#  サブディレクトリでも動きます。
+# ============================================================
+Options -Indexes
+DirectoryIndex index.php index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Authorization ヘッダーをPHPへ渡す（CGI実行のサーバー対策）
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # 実在するファイル・フォルダはそのまま
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # /job/<id>/ → job.php?id=<id>
+  RewriteRule ^job/([A-Za-z0-9_-]+)/?$ job.php?id=$1 [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
