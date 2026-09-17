@@ -463,9 +463,5 @@
     ]
   },
   "status": "published",
-  "updated": "2026-09-17 13:21",
-  "fee": {
-    "type": "fixed",
-    "value": "50万"
-  }
+  "updated": "2026-09-17 13:21"
 }
